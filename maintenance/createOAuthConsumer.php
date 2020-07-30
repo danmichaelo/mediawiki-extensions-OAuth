@@ -52,6 +52,9 @@ class CreateOAuthConsumer extends \Maintenance {
 		$this->addOption( 'grants', 'Grants', true, true, false, true );
 		$this->addOption( 'jsonOnSuccess', 'Output successful results as JSON' );
 		$this->addOption( 'approve', 'Accept the consumer' );
+		$this->addOption( 'oauthVersion', 'OAuth version, either "1" or "2"', true, true );
+		$this->addOption( 'nonConfidential', 'OAuth2 only: Whether the consumer cannot keep secrets' );
+		$this->addOption( 'oauth2Grants', 'OAuth2 grants', false, true, false, true );
 		$this->requireExtension( "OAuth" );
 	}
 
@@ -79,7 +82,18 @@ class CreateOAuthConsumer extends \Maintenance {
 			'rsaKey' => '', // Generate a key
 			'agreement' => true,
 			'restrictions' => \MWRestrictions::newDefault(),
+			'oauthVersion' => $this->getOption( 'oauthVersion', '1' ),
+			'oauth2IsConfidential' =>  $this->hasOption('nonConfidential') ? '0' : '1',
 		];
+
+		if ( $this->getOption('oauthVersion') === '2' ) {
+			$data['oauth2GrantTypes'] = '["' . implode(
+				'","',
+				$this->getOption( 'oauth2Grants', ['authorization_code', 'refresh_token'] )
+			) . '"]';
+		} else {
+			$data['oauth2GrantTypes'] = null;
+		}
 
 		$context = \RequestContext::getMain();
 		$context->setUser( $user );
